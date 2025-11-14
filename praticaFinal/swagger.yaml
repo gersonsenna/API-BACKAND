@@ -1,0 +1,105 @@
+openapi: 3.0.0
+info:
+  title: API de Tarefas
+  description: API para gerenciar tarefas
+  version: "1.0.0"
+servers:
+  - url: http://localhost:3000
+    description: Ambiente de desenvolvimento
+tags:
+  - name: tarefas
+paths:
+  /tarefas:
+    get:
+      tags:
+        - tarefas
+      responses:
+        '200':
+          description: Lista de tarefas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tarefa'
+    post:
+      tags:
+        - tarefas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tarefa'
+      responses:
+        '201':
+          description: Tarefa criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarefa'
+        '422':
+          description: Título e descrição são obrigatórios
+  /tarefas/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: ID da tarefa
+    get:
+      tags:
+        - tarefas
+      responses:
+        '200':
+          description: Detalhes da tarefa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarefa'
+        '404':
+          description: Tarefa não encontrada
+    put:
+      tags:
+        - tarefas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tarefa'
+      responses:
+        '200':
+          description: Tarefa atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarefa'
+        '404':
+          description: Tarefa não encontrada
+        '422':
+          description: Título e descrição são obrigatórios
+    delete:
+      tags:
+        - tarefas
+      responses:
+        '204':
+          description: Tarefa removida
+        '404':
+          description: Tarefa não encontrada
+components:
+  schemas:
+    Tarefa:
+      type: object
+      properties:
+        _id:
+          type: string
+        titulo:
+          type: string
+        descricao:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
