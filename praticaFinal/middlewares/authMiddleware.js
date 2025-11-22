@@ -1,23 +1,16 @@
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
 
-exports.verificarToken = (req, res, next) => {
+module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ msg: "Não autorizado" });
-
-  const token = authHeader.split(" ")[1];
+  if (!authHeader) return res.status(401).json({ erro: 'Token não fornecido' });
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2) return res.status(401).json({ erro: 'Token inválido' });
+  const token = parts[1];
   try {
-    const usuario = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = usuario;
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    req.usuarioId = payload.id;
     next();
   } catch (err) {
-    res.status(401).json({ msg: "Token inválido" });
-  }
-};
-
-exports.gerarToken = (payload) => {
-  try {
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
-  } catch (err) {
-    throw new Error("Erro ao gerar o token");
+    return res.status(401).json({ erro: 'Token inválido ou expirado' });
   }
 };
