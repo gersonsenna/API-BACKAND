@@ -27,3 +27,31 @@ async function registrar(req, res) {
     return res.status(500).json({ erro: err.message });
   }
 }
+
+async function login(req, res) {
+  try {
+    const { email, senha } = req.body;
+
+    const usuario = await usuarioRepository.buscarPorEmail(email);
+    if (!usuario) {
+      return res.status(400).json({ mensagem: "Usuário não encontrado" });
+    }
+
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
+    if (!senhaValida) {
+      return res.status(400).json({ mensagem: "Senha incorreta" });
+    }
+
+    const token = jwt.sign(
+      { id: usuario._id, email: usuario.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    return res.status(200).json({ token });
+  } catch (err) {
+    return res.status(500).json({ erro: err.message });
+  }
+}
+
+module.exports = { registrar, login };
