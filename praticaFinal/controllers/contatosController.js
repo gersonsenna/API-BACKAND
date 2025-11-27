@@ -2,7 +2,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Contato = require("../models/contatoModel");
 
-// REGISTRO
 exports.registrar = async (req, res) => {
   try {
     const { nome, email, telefone, senha } = req.body;
@@ -40,7 +39,7 @@ exports.registrar = async (req, res) => {
   }
 };
 
-// LOGIN
+
 exports.login = async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -71,7 +70,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// LISTAR TODOS
+
 exports.listar = async (req, res) => {
   try {
     const contatos = await Contato.find().select("-senha");
@@ -81,7 +80,7 @@ exports.listar = async (req, res) => {
   }
 };
 
-// BUSCAR POR ID
+
 exports.buscar = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,7 +100,7 @@ exports.buscar = async (req, res) => {
   }
 };
 
-// ATUALIZAR
+
 exports.atualizar = async (req, res) => {
   try {
     const { id } = req.params;
@@ -111,7 +110,7 @@ exports.atualizar = async (req, res) => {
     }
 
     const dados = { ...req.body };
-    delete dados.senha; // senha não atualiza por aqui
+    delete dados.senha; 
 
     const contato = await Contato.findByIdAndUpdate(id, dados, { new: true }).select("-senha");
 
@@ -125,7 +124,7 @@ exports.atualizar = async (req, res) => {
   }
 };
 
-// DELETAR
+
 exports.deletar = async (req, res) => {
   try {
     const { id } = req.params;

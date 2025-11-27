@@ -1,119 +1,141 @@
-const request = require("supertest");
-const mongoose = require("mongoose");
-const { MongoMemoryServer } = require("mongodb-memory-server");
+const supertest = require("supertest");
 const app = require("../app");
 const Contato = require("../models/contatoModel");
 
-let mongoServer;
-let token = "";
-let contatoCriado = "";
+const request = supertest(app);
+const url = "/api/contatos";
+
+let id = null;
+let token = null;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-  await mongoose.connect(uri);
+  // Limpa o banco antes dos testes
+  await Contato.deleteMany({});
+
+  // Cria um usuário para login
+  await request.post(url).send({
+    nome: "Senna",
+    email: "senna@test.com",
+    telefone: "9999-9999",
+    senha: "123456"
+  });
+
+  // Faz login e pega token
+  const response = await request.post("/api/login").send({
+    email: "senna@test.com",
+    senha: "123456"
+  });
+
+  token = response.body.token;
 });
 
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
-});
+describe("CRUD Contatos com JWT", () => {
 
-describe("Autenticação", () => {
-  test("Registrar contato e retornar token", async () => {
-    const res = await request(app)
-      .post("/api/contatos")
+  test("POST / deve retornar 201", async () => {
+    const response = await request.post(url)
+      .set("Authorization", `Bearer ${token}`)
       .send({
-        nome: "Senna",
-        email: "senna@test.com",
-        telefone: "99999-9999",
+        nome: "Novo Contato",
+        email: "novo@test.com",
+        telefone: "8888-8888",
         senha: "123456"
       });
 
-    expect(res.status).toBe(201);
-    expect(res.body.novo).toBeDefined();
+    expect(response.status).toBe(201);
+    expect(response.body.contato).toBeDefined();
+    expect(response.body.contato._id).toBeDefined();
+
+    id = response.body.contato._id;
   });
 
-  test("Login e retorno de token", async () => {
-    const res = await request(app)
-      .post("/api/usuarios/login")
-      .send({
-        email: "senna@test.com",
-        senha: "123456"
-      });
+  test("POST / deve retornar 422 (faltando dados)", async () => {
+    const response = await request.post(url)
+      .set("Authorization", `Bearer ${token}`)
+      .send({});
 
-    expect(res.status).toBe(200);
-    expect(res.body.token).toBeDefined();
-    token = res.body.token;
-  });
-});
-
-describe("CRUD de Contatos", () => {
-  test("Criar contato autenticado", async () => {
-    const res = await request(app)
-      .post("/api/contatos")
-      .set("Authorization", "Bearer " + token)
-      .send({
-        nome: "Contato 2",
-        email: "contato2@test.com",
-        telefone: "8888-0000",
-        senha: "123456"
-      });
-
-    expect(res.status).toBe(201);
-    expect(res.body.novo).toBeDefined();
-    contatoCriado = res.body.novo._id;
+    expect(response.status).toBe(422);
+    expect(response.body.msg).toBe("Campos obrigatórios");
   });
 
-  test("Listar contatos", async () => {
-    const res = await request(app)
-      .get("/api/contatos")
-      .set("Authorization", "Bearer " + token);
+  test("GET / deve retornar 200", async () => {
+    const response = await request.get(url)
+      .set("Authorization", `Bearer ${token}`);
 
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body)).toBe(true);
   });
 
-  test("Buscar contato por ID", async () => {
-    const res = await request(app)
-      .get(`/api/contatos/${contatoCriado}`)
-      .set("Authorization", "Bearer " + token);
+  test("GET /id deve retornar 200", async () => {
+    const response = await request.get(`${url}/${id}`)
+      .set("Authorization", `Bearer ${token}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body._id).toBe(contatoCriado);
+    expect(response.status).toBe(200);
+    expect(response.body._id).toBe(id);
   });
 
-  test("Atualizar contato", async () => {
-    const res = await request(app)
-      .put(`/api/contatos/${contatoCriado}`)
-      .set("Authorization", "Bearer " + token)
-      .send({ telefone: "1111-2222" });
+  test("GET /id deve retornar 400 (ID inválido)", async () => {
+    const response = await request.get(`${url}/0`)
+      .set("Authorization", `Bearer ${token}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.contato.telefone).toBe("1111-2222");
+    expect(response.status).toBe(400);
+    expect(response.body.msg).toBe("ID inválido");
   });
 
-  test("Deletar contato", async () => {
-    const res = await request(app)
-      .delete(`/api/contatos/${contatoCriado}`)
-      .set("Authorization", "Bearer " + token);
+  test("GET /id deve retornar 404 (não encontrado)", async () => {
+    const response = await request.get(`${url}/000000000000000000000000`)
+      .set("Authorization", `Bearer ${token}`);
 
-    expect(res.status).toBe(204);
-  });
-});
-
-describe("Proteção JWT", () => {
-  test("Negar acesso sem token", async () => {
-    const res = await request(app).get("/api/contatos");
-    expect(res.status).toBe(401);
+    expect(response.status).toBe(404);
+    expect(response.body.msg).toBe("Contato não encontrado");
   });
 
-  test("Negar acesso com token inválido", async () => {
-    const res = await request(app)
-      .get("/api/contatos")
-      .set("Authorization", "Bearer 123abc");
+  test("PUT /id deve retornar 200", async () => {
+    const response = await request.put(`${url}/${id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ nome: "Contato Atualizado" });
 
-    expect(res.status).toBe(403);
+    expect(response.status).toBe(200);
+    expect(response.body.contato.nome).toBe("Contato Atualizado");
   });
+
+  test("PUT /id deve retornar 400", async () => {
+    const response = await request.put(`${url}/0`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ nome: "Teste" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.msg).toBe("ID inválido");
+  });
+
+  test("PUT /id deve retornar 404", async () => {
+    const response = await request.put(`${url}/000000000000000000000000`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ nome: "Teste" });
+
+    expect(response.status).toBe(404);
+    expect(response.body.msg).toBe("Contato não encontrado");
+  });
+
+  test("DELETE /id deve retornar 204", async () => {
+    const response = await request.delete(`${url}/${id}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(204);
+  });
+
+  test("DELETE /id deve retornar 400", async () => {
+    const response = await request.delete(`${url}/0`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.msg).toBe("ID inválido");
+  });
+
+  test("DELETE /id deve retornar 404", async () => {
+    const response = await request.delete(`${url}/${id}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+  });
+
 });
