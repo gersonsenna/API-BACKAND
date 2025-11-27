@@ -1,0 +1,57 @@
+openapi: 3.0.0
+info:
+  title: API de Contatos
+  description: API RESTful com autenticação JWT
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Localhost
+
+paths:
+  /api/contatos/registrar:
+    post:
+      summary: Registrar um novo contato
+      tags: [Contatos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Contato"
+      responses:
+        "201":
+          description: Contato criado com sucesso
+
+  /api/contatos/login:
+    post:
+      summary: Login
+      tags: [Contatos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                senha:
+                  type: string
+      responses:
+        "200":
+          description: Login realizado
+
+components:
+  schemas:
+    Contato:
+      type: object
+      properties:
+        nome:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        senha:
+          type: string

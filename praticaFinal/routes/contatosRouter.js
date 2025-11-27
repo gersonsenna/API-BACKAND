@@ -1,15 +1,17 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const auth = require('../middlewares/authMiddleware'); 
+const controller = require("../controllers/contatosController");
+const auth = require("../middlewares/authMiddleware");
 
-const { listar, buscar, criar, atualizar, deletar } = require('../controllers/contatosController');
+// Rotas públicas
+router.post("/registrar", controller.registrar);
+router.post("/login", controller.login);
 
-router.get('/', auth, listar); 
-router.get('/:id', auth, buscar);
-
-router.post('/', auth, criar); 
-router.put('/:id', auth, atualizar);
-router.delete('/:id', auth, deletar);
+// Rotas protegidas
+router.get("/", auth, controller.listar);
+router.get("/:id", auth, controller.buscar);
+router.put("/:id", auth, controller.atualizar);
+router.delete("/:id", auth, controller.deletar);
 
 module.exports = router;
