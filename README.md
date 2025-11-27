@@ -166,7 +166,7 @@ Totalmente padrão MVC + REST + Clean Code.
 
 # Integrantes do Grupo
 
-## Gerson França Senna
+## Gerson Senna
 
 Estrutura inicial do projeto
 
@@ -178,7 +178,7 @@ Setup do Swagger
 
 Revisão e integração final
 
-## 
+## THIAGO SANTOS
 
 Implementação dos controllers
 
@@ -186,7 +186,7 @@ Modelos do MongoDB
 
 Middlewares de autenticação
 
-## 
+## HUGO MORAIS
 Testes automatizados
 
 Ajustes de validação
