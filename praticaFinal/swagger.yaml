@@ -1,50 +1,183 @@
 openapi: 3.0.0
 info:
   title: API de Contatos
-  description: API RESTful com autenticação JWT
   version: 1.0.0
+  description: API RESTful para gerenciamento de contatos com autenticação JWT.
 
 servers:
   - url: http://localhost:3000
-    description: Localhost
+    description: Servidor local
 
 paths:
+
   /api/contatos/registrar:
     post:
+      tags:
+        - Contatos
       summary: Registrar um novo contato
-      tags: [Contatos]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Contato"
+              $ref: "#/components/schemas/ContatoCreate"
       responses:
         "201":
           description: Contato criado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem:
+                    type: string
+                  token:
+                    type: string
+        "400":
+          description: Dados inválidos
 
   /api/contatos/login:
     post:
-      summary: Login
-      tags: [Contatos]
+      tags:
+        - Contatos
+      summary: Fazer login com email e senha
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                senha:
-                  type: string
+              $ref: "#/components/schemas/Login"
       responses:
         "200":
-          description: Login realizado
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem:
+                    type: string
+                  token:
+                    type: string
+        "401":
+          description: Credenciais inválidas
+
+  /api/contatos:
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Contatos
+      summary: Listar todos os contatos (protegido)
+      responses:
+        "200":
+          description: Lista de contatos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContatoResponse"
+        "401":
+          description: Token inválido ou ausente
+
+  /api/contatos/{id}:
+    get:
+      security:
+        - BearerAuth: []
+      tags:
+        - Contatos
+      summary: Buscar contato por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Contato encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContatoResponse"
+        "403":
+          description: Acesso negado
+        "404":
+          description: Contato não encontrado
+
+    put:
+      security:
+        - BearerAuth: []
+      tags:
+        - Contatos
+      summary: Atualizar dados de um contato
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContatoUpdate"
+      responses:
+        "200":
+          description: Contato atualizado
+        "403":
+          description: Acesso negado
+        "404":
+          description: Contato não encontrado
+
+    delete:
+      security:
+        - BearerAuth: []
+      tags:
+        - Contatos
+      summary: Deletar um contato
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Contato deletado com sucesso
+        "403":
+          description: Acesso negado
+        "404":
+          description: Contato não encontrado
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
-    Contato:
+
+    ContatoCreate:
+      type: object
+      required:
+        - nome
+        - email
+        - senha
+      properties:
+        nome:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        senha:
+          type: string
+
+    ContatoUpdate:
       type: object
       properties:
         nome:
@@ -52,6 +185,31 @@ components:
         email:
           type: string
         telefone:
+          type: string
+
+    ContatoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        nome:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    Login:
+      type: object
+      required:
+        - email
+        - senha
+      properties:
+        email:
           type: string
         senha:
           type: string
