@@ -1,46 +1,46 @@
 openapi: 3.0.0
+
 info:
   title: API de Contatos
+  description: Documentação da API RESTful para gerenciamento de contatos com autenticação JWT.
   version: 1.0.0
-  description: API RESTful para gerenciamento de contatos com autenticação JWT.
 
 servers:
   - url: http://localhost:3000
-    description: Servidor local
+    description: Ambiente de desenvolvimento
+
+tags:
+  - name: Contatos
+  - name: Autenticação
 
 paths:
 
-  /api/contatos/registrar:
+  /api/usuarios/registrar:
     post:
       tags:
-        - Contatos
-      summary: Registrar um novo contato
+        - Autenticação
+      summary: Registrar novo usuário
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ContatoCreate"
+              $ref: "#/components/schemas/NovoUsuario"
       responses:
-        "201":
-          description: Contato criado com sucesso
+        201:
+          description: Usuário registrado com sucesso
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  mensagem:
-                    type: string
-                  token:
-                    type: string
-        "400":
-          description: Dados inválidos
+                $ref: "#/components/schemas/UsuarioRegistrado"
+        400:
+          description: Dados inválidos ou usuário já existente
 
-  /api/contatos/login:
+  /api/usuarios/login:
     post:
       tags:
-        - Contatos
-      summary: Fazer login com email e senha
+        - Autenticação
+      summary: Realizar login
       requestBody:
         required: true
         content:
@@ -48,70 +48,90 @@ paths:
             schema:
               $ref: "#/components/schemas/Login"
       responses:
-        "200":
+        200:
           description: Login realizado com sucesso
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  mensagem:
-                    type: string
-                  token:
-                    type: string
-        "401":
+                $ref: "#/components/schemas/Token"
+        400:
           description: Credenciais inválidas
 
   /api/contatos:
     get:
-      security:
-        - BearerAuth: []
       tags:
         - Contatos
-      summary: Listar todos os contatos (protegido)
+      summary: Listar o contato do usuário autenticado
+      security:
+        - bearerAuth: []
       responses:
-        "200":
-          description: Lista de contatos
+        200:
+          description: Lista dos contatos
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ContatoResponse"
-        "401":
-          description: Token inválido ou ausente
+                  $ref: "#/components/schemas/Contato"
+        401:
+          description: Token ausente ou inválido
+
+    post:
+      tags:
+        - Contatos
+      summary: Criar um novo contato
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NovoContato"
+      responses:
+        201:
+          description: Contato criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contato"
+        400:
+          description: Dados inválidos
+        401:
+          description: Não autorizado
 
   /api/contatos/{id}:
     get:
-      security:
-        - BearerAuth: []
       tags:
         - Contatos
-      summary: Buscar contato por ID
+      summary: Buscar contato pelo ID
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
+          description: ID do contato
           schema:
             type: string
       responses:
-        "200":
+        200:
           description: Contato encontrado
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ContatoResponse"
-        "403":
+                $ref: "#/components/schemas/Contato"
+        403:
           description: Acesso negado
-        "404":
+        404:
           description: Contato não encontrado
 
     put:
-      security:
-        - BearerAuth: []
       tags:
         - Contatos
-      summary: Atualizar dados de um contato
+      summary: Atualizar contato pelo ID
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -123,21 +143,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ContatoUpdate"
+              $ref: "#/components/schemas/NovoContato"
       responses:
-        "200":
+        200:
           description: Contato atualizado
-        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contato"
+        403:
           description: Acesso negado
-        "404":
+        404:
           description: Contato não encontrado
 
     delete:
-      security:
-        - BearerAuth: []
       tags:
         - Contatos
-      summary: Deletar um contato
+      summary: Excluir contato pelo ID
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -145,28 +169,64 @@ paths:
           schema:
             type: string
       responses:
-        "204":
-          description: Contato deletado com sucesso
-        "403":
+        204:
+          description: Contato removido com sucesso
+        403:
           description: Acesso negado
-        "404":
+        404:
           description: Contato não encontrado
 
 components:
+
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
 
   schemas:
 
-    ContatoCreate:
+    Login:
       type: object
-      required:
-        - nome
-        - email
-        - senha
+      properties:
+        email:
+          type: string
+        senha:
+          type: string
+
+    Token:
+      type: object
+      properties:
+        token:
+          type: string
+
+    NovoUsuario:
+      type: object
+      properties:
+        nome:
+          type: string
+        email:
+          type: string
+        senha:
+          type: string
+
+    UsuarioRegistrado:
+      type: object
+      properties:
+        mensagem:
+          type: string
+        usuario:
+          type: object
+          properties:
+            id:
+              type: string
+            nome:
+              type: string
+            email:
+              type: string
+
+    NovoContato:
+      type: object
       properties:
         nome:
           type: string
@@ -177,17 +237,7 @@ components:
         senha:
           type: string
 
-    ContatoUpdate:
-      type: object
-      properties:
-        nome:
-          type: string
-        email:
-          type: string
-        telefone:
-          type: string
-
-    ContatoResponse:
+    Contato:
       type: object
       properties:
         id:
@@ -197,19 +247,4 @@ components:
         email:
           type: string
         telefone:
-          type: string
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-
-    Login:
-      type: object
-      required:
-        - email
-        - senha
-      properties:
-        email:
-          type: string
-        senha:
           type: string
